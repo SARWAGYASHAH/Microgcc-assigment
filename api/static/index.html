@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Forecasting Dashboard</title>
+    <link rel="stylesheet" href="/dashboard/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">Beverage Sales</p>
+          <h1>Forecasting Dashboard</h1>
+        </div>
+
+        <label class="field-label" for="stateSelect">State</label>
+        <select id="stateSelect" class="control"></select>
+
+        <div class="status-panel">
+          <span id="apiDot" class="status-dot"></span>
+          <span id="apiStatus">Checking API</span>
+        </div>
+
+        <nav class="nav-list" aria-label="Dashboard sections">
+          <a href="#overview">Overview</a>
+          <a href="#forecast">Forecast</a>
+          <a href="#models">Models</a>
+          <a href="#remaining">Remaining Work</a>
+        </nav>
+      </aside>
+
+      <main>
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">Production preview</p>
+            <h2 id="pageTitle">Loading forecast</h2>
+          </div>
+          <button id="refreshButton" class="primary-button" type="button">Refresh</button>
+        </section>
+
+        <section id="overview" class="metrics-grid" aria-label="Summary metrics">
+          <article class="metric">
+            <span>States</span>
+            <strong id="statesCount">--</strong>
+          </article>
+          <article class="metric">
+            <span>Best Model</span>
+            <strong id="bestModel">--</strong>
+          </article>
+          <article class="metric">
+            <span>Best MAPE</span>
+            <strong id="bestMape">--</strong>
+          </article>
+          <article class="metric">
+            <span>Forecast Horizon</span>
+            <strong id="forecastHorizon">--</strong>
+          </article>
+        </section>
+
+        <section id="forecast" class="workspace-grid">
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Historical plus future</p>
+                <h3>Sales Trend</h3>
+              </div>
+              <div class="legend">
+                <span><i class="legend-line historical"></i>Historical</span>
+                <span><i class="legend-line forecast"></i>Forecast</span>
+              </div>
+            </div>
+            <canvas id="salesChart" height="320"></canvas>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Next 8 weeks</p>
+                <h3>Forecast Values</h3>
+              </div>
+            </div>
+            <div id="forecastList" class="forecast-list"></div>
+          </article>
+        </section>
+
+        <section id="models" class="workspace-grid">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Validation metrics</p>
+                <h3>Model Comparison</h3>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>MAPE</th>
+                    <th>MAE</th>
+                    <th>RMSE</th>
+                  </tr>
+                </thead>
+                <tbody id="modelRows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Primary metric</p>
+                <h3>MAPE by Model</h3>
+              </div>
+            </div>
+            <canvas id="modelChart" height="280"></canvas>
+          </article>
+        </section>
+
+        <section id="remaining" class="panel full-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Completion tracker</p>
+              <h3>What Is Left</h3>
+            </div>
+          </div>
+          <div class="checklist">
+            <div class="check done">
+              <span></span>
+              <div>
+                <strong>Forecast pipeline</strong>
+                <p>Data loading, feature engineering, model training, comparison, and saved artifacts are in place.</p>
+              </div>
+            </div>
+            <div class="check done">
+              <span></span>
+              <div>
+                <strong>REST API</strong>
+                <p>States, forecasts, historical values, model comparison, health checks, and prediction endpoints exist.</p>
+              </div>
+            </div>
+            <div class="check done">
+              <span></span>
+              <div>
+                <strong>Dashboard UI</strong>
+                <p>This interface reads from the API and visualizes forecasts, history, and model quality.</p>
+              </div>
+            </div>
+            <div class="check pending">
+              <span></span>
+              <div>
+                <strong>Automated tests</strong>
+                <p>Add unit tests for data preparation, metrics, model selection, and API response shapes.</p>
+              </div>
+            </div>
+            <div class="check pending">
+              <span></span>
+              <div>
+                <strong>Deployment packaging</strong>
+                <p>Add a Dockerfile or hosting notes, environment settings, and a production WSGI server setup.</p>
+              </div>
+            </div>
+            <div class="check pending">
+              <span></span>
+              <div>
+                <strong>Operational polish</strong>
+                <p>Add model refresh scheduling, monitoring, error alerts, and documented data update steps.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/dashboard/app.js"></script>
+  </body>
+</html>
