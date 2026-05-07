@@ -1,161 +1,247 @@
-# Time Series Forecasting System
+# End-to-End Time Series Forecasting System
 
-A production-ready, end-to-end forecasting system for beverage sales across 43 US states.
+This project is a production-style forecasting service for predicting the next 8 weeks of beverage sales for each US state from the provided Excel dataset.
+
+It trains multiple forecasting models, compares them using validation metrics, selects the best model per state, saves forecast artifacts, exposes predictions through a Flask REST API, and includes a browser dashboard for reviewing results.
+
+For the full project explanation, see [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md).
+
+## Key Features
+
+- Loads and cleans the provided Excel dataset.
+- Handles missing dates by resampling each state to a regular weekly frequency.
+- Handles missing sales values through interpolation and forward/backward filling.
+- Creates lag, rolling, calendar, holiday, and trend features.
+- Uses a time-series validation split with the last 8 weeks as validation data.
+- Trains and compares SARIMA, Prophet, XGBoost, and LSTM models.
+- Selects the best model per state using MAPE.
+- Generates 8-week forecasts for every state.
+- Serves forecasts, model metrics, historical data, and predictions through a REST API.
+- Provides a dashboard UI at `/dashboard`.
 
 ## Architecture
 
-```
-┌─────────────┐    ┌──────────────────┐    ┌───────────────┐    ┌──────────────┐
-│  Excel Data │───▶│  Data Loader     │───▶│  Feature Eng  │───▶│  4 Models    │
-│  (8K rows)  │    │  (Clean/Resample)│    │  (Lags/Roll)  │    │  per State   │
-└─────────────┘    └──────────────────┘    └───────────────┘    └──────┬───────┘
-                                                                       │
-                   ┌──────────────────┐    ┌───────────────┐          │
-                   │   REST API       │◀───│ Model Selector│◀─────────┘
-                   │   (Flask)        │    │ (Best MAPE)   │
-                   └──────────────────┘    └───────────────┘
+```text
+Excel Dataset
+    |
+    v
+Data Loader
+    - parse dates
+    - clean missing values
+    - resample weekly per state
+    |
+    v
+Feature Engineering
+    - lags
+    - rolling mean/std
+    - calendar fields
+    - holiday flags
+    - trend features
+    |
+    v
+Model Training per State
+    - SARIMA
+    - Prophet
+    - XGBoost
+    - LSTM
+    |
+    v
+Model Selector
+    - evaluate on validation data
+    - select lowest MAPE
+    |
+    v
+Artifacts + Flask API + Dashboard
 ```
 
 ## Models Implemented
 
-| Model | Type | Description |
-|-------|------|-------------|
-| **SARIMA** | Statistical | Auto-ARIMA with seasonal components (pmdarima) |
-| **Prophet** | Statistical | Facebook Prophet with US holidays & yearly seasonality |
-| **XGBoost** | ML | Gradient boosting with engineered lag/rolling/calendar features |
-| **LSTM** | Deep Learning | 2-layer LSTM with Keras/TensorFlow, sequence-based |
+| Model | Type | Purpose |
+|-------|------|---------|
+| SARIMA | Statistical | Captures autoregressive and seasonal time-series behavior |
+| Prophet | Statistical | Captures trend, yearly seasonality, changepoints, and holidays |
+| XGBoost | Machine Learning | Uses engineered lag, rolling, calendar, holiday, and trend features |
+| LSTM | Deep Learning | Learns sequential patterns from recent sales history |
 
 ## Feature Engineering
 
-- **Lag features**: t-1, t-2, t-3, t-4, t-7, t-13, t-30 (weekly periods after resampling)
-- **Rolling statistics**: Mean & std over 4, 8, 13 week windows
-- **Calendar**: Week of year, month, quarter, day of week, cyclical encodings
-- **Holiday flags**: US federal holidays (via `holidays` library)
-- **Trend**: Time index, normalized time
+The feature pipeline is implemented in `src/feature_engineering.py`.
+
+| Feature Group | Details |
+|---------------|---------|
+| Lag features | `t-1`, `t-2`, `t-3`, `t-4`, `t-7`, `t-13`, `t-30` weekly periods |
+| Rolling statistics | Rolling mean and standard deviation over 4, 8, and 13 weeks |
+| Calendar features | Week of year, month, quarter, year, day of week, day of year |
+| Cyclical features | Sine/cosine encodings for month and week of year |
+| Holiday features | US holiday flag using the `holidays` library |
+| Trend features | Time index and normalized time index |
 
 ## Assignment Coverage
 
-| Requirement | Status | Where |
-|-------------|--------|-------|
-| Forecast next 8 weeks for each state | Done | `main.py`, `artifacts/results/forecasts.json`, `/forecast/<state>` |
-| Handle missing dates / values | Done | `src/data_loader.py` resamples weekly and fills/interpolates missing values |
-| Handle seasonality and trend | Done | SARIMA/Prophet plus calendar, cyclical, holiday, and trend features |
-| Automatically select best model | Done | `src/model_selector.py` selects lowest MAPE per state |
-| Implement SARIMA | Done | `src/models/arima_model.py` |
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Forecast next 8 weeks for each state | Done | `main.py`, `/forecast/<state>` |
+| Handle missing dates and missing values | Done | `src/data_loader.py` |
+| Handle seasonality and trend | Done | SARIMA, Prophet, calendar/holiday/trend features |
+| Automatically select the best model | Done | `src/model_selector.py` |
+| Implement ARIMA/SARIMA | Done | `src/models/arima_model.py` |
 | Implement Facebook Prophet | Done | `src/models/prophet_model.py` |
-| Implement XGBoost with lag features | Done | `src/models/xgboost_model.py`, `src/feature_engineering.py` |
+| Implement XGBoost with lag features | Done | `src/models/xgboost_model.py` |
 | Implement LSTM | Done | `src/models/lstm_model.py` |
-| Lag features t-1, t-7, t-30 | Done | `config.py`, `src/feature_engineering.py` |
-| Rolling mean / std | Done | `src/feature_engineering.py` |
-| Day of week, month, holiday flag | Done | `src/feature_engineering.py` |
-| Time-series validation split | Done | `src/data_loader.py` uses the last 8 weeks as validation |
-| REST API backend service | Done | `api/app.py` |
-| Browser UI | Done | `/dashboard` |
+| Create lag features t-1, t-7, t-30 | Done | `config.py`, `src/feature_engineering.py` |
+| Create rolling mean/std | Done | `src/feature_engineering.py` |
+| Create day of week, month, holiday flag | Done | `src/feature_engineering.py` |
+| Use time-series validation split | Done | `src/data_loader.py` |
+| Serve predictions with REST API | Done | `api/app.py` |
+| Real backend-service structure | Done | Modular source folders, config, artifacts, API layer |
 
-## Remaining Work
+## Project Structure
 
-- Add automated tests for data cleaning, feature engineering, model selection, and API response schemas.
-- Add deployment packaging such as Dockerfile, environment file, and production WSGI startup command.
-- Add model monitoring and retraining notes for future data refreshes.
-- Re-run `python main.py` after changing lag settings if you want saved model artifacts trained with the new `lag_30` feature.
+```text
+assigmnet/
+|-- api/
+|   |-- __init__.py
+|   |-- app.py
+|   `-- static/
+|       |-- app.js
+|       |-- index.html
+|       `-- styles.css
+|-- artifacts/
+|   `-- results/
+|       |-- comparison_table.csv
+|       |-- forecasts.json
+|       `-- model_comparison.json
+|-- src/
+|   |-- __init__.py
+|   |-- data_loader.py
+|   |-- feature_engineering.py
+|   |-- model_selector.py
+|   |-- utils.py
+|   `-- models/
+|       |-- __init__.py
+|       |-- arima_model.py
+|       |-- base_model.py
+|       |-- lstm_model.py
+|       |-- prophet_model.py
+|       `-- xgboost_model.py
+|-- config.py
+|-- main.py
+|-- requirements.txt
+|-- Forecasting Case- Study.xlsx
+|-- PROJECT_DOCUMENTATION.md
+`-- README.md
+```
 
-## Quick Start
+## Setup
 
-### 1. Install Dependencies
+Create and activate a Python environment, then install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Train Models (Quick Test — 3 states)
+## Run the Training Pipeline
+
+Quick test on three states:
+
 ```bash
 python main.py --test
 ```
 
-### 3. Train All States
+Train specific states:
+
+```bash
+python main.py --states California Texas "New York"
+```
+
+Train all states:
+
 ```bash
 python main.py
 ```
 
-### 4. Start the API
+The pipeline saves outputs under `artifacts/`.
+
+## Start the API
+
 ```bash
 python -m api.app
 ```
 
-### 5. Open the UI
-After the API starts, open:
+Open the dashboard:
 
 ```text
 http://localhost:5000/dashboard
 ```
 
-The dashboard lets you choose a state, review historical sales, inspect the 8-week forecast, and compare model validation metrics.
-
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | API documentation |
+| GET | `/` | API documentation and service metadata |
 | GET | `/health` | Health check |
-| GET | `/states` | List all states |
-| GET | `/forecast/<state>` | 8-week forecast for a state |
-| GET | `/forecast/all` | All state forecasts |
-| GET | `/models/comparison` | Model comparison metrics |
-| GET | `/models/best` | Best model per state |
-| POST | `/predict` | On-demand predictions |
-| GET | `/historical/<state>` | Historical sales data |
+| GET | `/states` | List available states |
+| GET | `/forecast/<state>` | Return saved 8-week forecast for one state |
+| GET | `/forecast/all` | Return saved forecasts for all states |
+| GET | `/models/comparison` | Return detailed model comparison metrics |
+| GET | `/models/best` | Return best model selected per state |
+| POST | `/predict` | Generate on-demand prediction using trained model artifacts |
+| GET | `/historical/<state>` | Return historical sales data for one state |
 | GET | `/dashboard` | Browser dashboard UI |
 
-### Example API Calls
+Example:
 
 ```bash
-# Get forecast for California
 curl http://localhost:5000/forecast/California
+```
 
-# On-demand prediction (custom horizon)
+On-demand prediction:
+
+```bash
 curl -X POST http://localhost:5000/predict \
   -H "Content-Type: application/json" \
-  -d '{"state": "Texas", "horizon": 12}'
-
-# Model comparison
-curl http://localhost:5000/models/comparison
+  -d "{\"state\": \"Texas\", \"horizon\": 12}"
 ```
 
-## Project Structure
+## Generated Artifacts
 
-```
-assigmnet/
-├── config.py                  # Central configuration & hyperparameters
-├── main.py                    # Pipeline orchestrator (train → compare → forecast)
-├── requirements.txt           # Python dependencies
-├── README.md                  # This file
-├── Forecasting Case- Study.xlsx  # Raw dataset
-├── api/
-│   ├── __init__.py
-│   └── app.py                 # Flask REST API
-├── src/
-│   ├── __init__.py
-│   ├── data_loader.py         # Data loading, cleaning, resampling
-│   ├── feature_engineering.py # Feature creation pipeline
-│   ├── utils.py               # Metrics & logging
-│   ├── model_selector.py      # Model comparison & selection
-│   └── models/
-│       ├── __init__.py
-│       ├── base_model.py      # Abstract base class
-│       ├── arima_model.py     # SARIMA implementation
-│       ├── prophet_model.py   # Prophet implementation
-│       ├── xgboost_model.py   # XGBoost implementation
-│       └── lstm_model.py      # LSTM implementation
-└── artifacts/                 # Generated outputs
-    ├── models/                # Saved model objects (.pkl)
-    └── results/               # Forecasts, comparisons (.json, .csv)
-```
+| Artifact | Purpose |
+|----------|---------|
+| `artifacts/results/forecasts.json` | Saved 8-week forecasts by state |
+| `artifacts/results/model_comparison.json` | Best models and metrics |
+| `artifacts/results/comparison_table.csv` | Flat table of validation metrics |
+| `artifacts/models/trained_models.pkl` | Trained model objects for `/predict` |
+| `artifacts/prepared_data.pkl` | Prepared historical data for API historical endpoint |
+
+Large binary artifacts are ignored by Git. If you clone the project fresh, run `python main.py` to regenerate `trained_models.pkl` and `prepared_data.pkl`.
 
 ## Evaluation
 
-Models are compared using:
-- **MAPE** (primary — used for model selection)
-- **MAE** (Mean Absolute Error)
-- **RMSE** (Root Mean Squared Error)
-- **sMAPE** (Symmetric MAPE)
+Models are evaluated on the final 8 weeks of each state's time series. This avoids leakage because validation data is always later than training data.
 
-Train/validation split uses the last 8 weeks as validation (time-series aware, no data leakage).
+Metrics:
+
+- MAPE, the primary selection metric
+- MAE
+- RMSE
+- sMAPE
+
+## Dashboard
+
+The dashboard is served by Flask from `api/static/` and displays:
+
+- State selector
+- API health status
+- Historical sales trend
+- 8-week forecast line
+- Forecast value list
+- Best model and MAPE
+- Model comparison table and chart
+- Remaining work checklist
+
+## Remaining Work
+
+- Add automated tests for data loading, feature engineering, metrics, model selection, and API responses.
+- Add a Dockerfile and production WSGI server configuration.
+- Add model monitoring and scheduled retraining notes.
+- Re-run the full pipeline after feature changes so saved model artifacts match the latest feature set.
